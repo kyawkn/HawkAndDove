@@ -1,4 +1,7 @@
-from random import shuffle
+# file: Main.py
+# @author: Kyaw Khant Nyar (kxk3035@rit.edu)
+
+import random
 from sys import argv as ag
 from sys import exit
 import math
@@ -17,11 +20,18 @@ class Individual:
     is_dead = False
 
     def __init__(self, id, strategy, resource=0):
+        """
+        initialize an individual
+        :param id: individual's id
+        :param strategy: individual's strategy
+        :param resource: amount of resource they currently own
+        """
         self.id = id
         self.strategy = strategy
         self.resource = resource
 
     def update_resource(self, value):
+        # update the resource
         self.resource += value
 
     def print_type(self):
@@ -38,12 +48,12 @@ def display_out(type, prior,
                 first_player,
                 second_player):
     """
-    display out prints out the
-    :param type:
-    :param prior:
-    :param first_player:
-    :param second_player:
-    :return:
+    prints out display stats
+    :param type: type of display
+    :param prior: priority, hawk is displayed first
+    :param first_player: first individual
+    :param second_player: second individual
+    :return: none
     """
 
     if type == 1:
@@ -69,20 +79,22 @@ def battle(player_one,
            hawk_attack
            ):
     """
-
-    :param player_one:
-    :param player_two:
-    :param pop_num:
-    :param resource:
-    :param hawk_attack:
-    :return:
+    run one competition of two random individuals using their strategy types
+    :param player_one: first random individual
+    :param player_two: second random individual
+    :param pop_num: population of alive individuals
+    :param resource: resource number to compete
+    :param hawk_attack: Hawk-Hawk interaction cost
+    :return: population of alive individuals
     """
     strategy = player_one.strategy + player_two.strategy
     # display the types
     priority = 1 if player_one.strategy >= player_two.strategy else 2
 
+    # display individual id, and its strategy
     display_out(1, priority, player_one, player_two)
 
+    # Dove-Dove
     if strategy == 0:
         half_res = math.trunc(resource/2)
         print("Dove/Dove: Dove: +{}	Dove: +{}".format(half_res, half_res))
@@ -91,6 +103,7 @@ def battle(player_one,
 
         display_out(2, priority, player_one, player_two)
 
+    # Hawk-Dove
     elif strategy == 1:
         print("Hawk/Dove: Hawk: +{}	Dove: +0".format(resource))
         if player_one.strategy > player_two.strategy:
@@ -100,16 +113,20 @@ def battle(player_one,
 
         display_out(2, priority, player_one, player_two)
 
+    # Hawk-Hawk
     else:
+        # Hawk cost
         hawk_attack1 = resource - hawk_attack
         hawk_attack2 = hawk_attack1 - hawk_attack
 
+        # display if Hawk is gaining or losing resource
         op1 = "" if hawk_attack1 < 0 else "+"
         op2 = "" if hawk_attack2 < 0 else "+"
 
         print("Hawk/Hawk: Hawk: {}{}	Hawk: {}{}".format(op1, hawk_attack1, op2, hawk_attack2))
         player_one.resource += hawk_attack1
         player_two.resource += hawk_attack2
+        # check any casualty
         if player_one.resource < 0:
             print("Hawk one has died!")
             player_one.is_dead = True
@@ -121,16 +138,16 @@ def battle(player_one,
 
         display_out(2, priority, player_one, player_two)
 
-    print("")
+    print("")  # line break
     return pop_num
 
 
 def populate (hawk_size, dove_size):
     """
-
-    :param hawk_size:
-    :param dove_size:
-    :return:
+    create an array of individuals using the size of hawks and doves
+    :param hawk_size: hawk size
+    :param dove_size: dove size
+    :return: an array of individuals
     """
     hawks = [Individual(i, 1) for i in range(hawk_size)]
     doves = [Individual(j + hawk_size, 0) for j in range(dove_size)]
@@ -144,25 +161,27 @@ def encounter_simulate(population,
                        resource,
                        hawk_cost):
     """
-
-    :param population:
-    :param n:
-    :param pop_size:
-    :param resource:
-    :param hawk_cost:
-    :return:
+    simulate n encounters by randomly choosing two alive individuals and call
+    battle to compete for the resource, and exit if all individuals are dead
+    :param population: array of individuals
+    :param n: number of encounters
+    :param pop_size: size of the population
+    :param resource: resource to compete
+    :param hawk_cost: Hawk-Hawk interaction cost
+    :return: None
     """
     cur = 1  # keep tracks of the iteration number
     total_alive = pop_size
 
-    while cur <= n and total_alive > 1:
+    for i in range(0, n):
 
-        shuffle(population)
-        first_player = population[0]
-        second_player = population[1]
-        if not first_player.is_dead and not second_player.is_dead:
+        first_player = random.choice(population)
+        second_player = random.choice(population)
+        if not first_player.is_dead and not second_player.is_dead \
+                and first_player != second_player:
             total_alive = battle(first_player, second_player, total_alive, resource, hawk_cost)
-            cur += 1
+            if total_alive <= 1:
+                break
 
     if total_alive < 2:
         print("No more living individual is left.\n")
@@ -171,14 +190,16 @@ def encounter_simulate(population,
 
 def display_member(population):
     """
-
-    :param population:
-    :menu choice:
+    print out the individuals and their resources
+    :param population: array of individuals
+    :menu choice: 2
     """
-    new_population = sorted(population, key=lambda x: x.id)
+    new_population = sorted(population, key=lambda x: x.id)  # sort individuals by id
     livings = 0
 
+    # loop and prints
     for ind in new_population:
+        # check num of livings
         livings += 1 if ind.resource >= 0 else 0
         ind_id = ind.id
         ind_type = "Hawk" if ind.strategy > 0 else "Dove"
@@ -194,10 +215,11 @@ def display_resource_sort(population):
     display the resources along with the strategy types or DEAD if
     an Individual has negative resource
     :param population: list of the Individuals
-    :menu choice:
+    :menu choice: 3
     """
     new_pop = sorted(population, key=lambda x: x.resource,  reverse=True)
     for ind in new_pop:
+        # check type
         ind_type = "Hawk" if ind.strategy > 0 else "Dove"
         ind_type_status = "DEAD" if ind.is_dead else ind_type
         print("{}:{}".format(ind_type_status, ind.resource))
@@ -305,10 +327,10 @@ if __name__ == '__main__':
             print("Cannot convert the type <String> into int explicitly.")
 
         except IndexError as ie:
-            print("Usage: ./project02 popSize [percentHawks] [resourceAmt] [costHawk-Hawk]")
+            print("Usage: python main.py popSize [percentHawks] [resourceAmt] [costHawk-Hawk]")
 
     else:
-        print("Usage: ./project02 popSize [percentHawks] [resourceAmt] [costHawk-Hawk]")
+        print("Usage: python main.py popSize [percentHawks] [resourceAmt] [costHawk-Hawk]")
 
 
 
